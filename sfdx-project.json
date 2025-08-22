@@ -7,6 +7,6 @@
   ],
   "name": "ApexSpecialist",
   "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sfdcLoginUrl": "https://wise-unicorn-ro60y2-dev-ed.my.salesforce.com",
   "sourceApiVersion": "64.0"
 }
