@@ -85,7 +85,7 @@ public with sharing class MaintenanceRequestHelper {
             newRequest.Subject = 'Routine Checkup'; // Set a meaningful subject
             //// Set the due date based on the shortest maintenance cycle
             Decimal maintenanceCycle = equipmentMaintenanceCycles.get(closedRequest.Id);
-            if (maintenanceCycle != null) {
+            if (maintenanceCycle != 0) {
                 newRequest.Date_Due__c = System.today().addDays(maintenanceCycle.intValue()); // Assuming Due_Date__c is the field for due date
             } else {
                 newRequest.Date_Due__c = System.today().addDays(30); // Default to 30 days if no maintenance cycle found

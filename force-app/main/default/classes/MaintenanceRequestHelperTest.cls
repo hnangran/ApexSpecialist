@@ -13,9 +13,10 @@ public with sharing class MaintenanceRequestHelperTest {
     @TestSetup
     static void setupTestData(){
         List<Product2> products = new List<Product2>(); 
-        for(Integer i=1; i<=5; i++){
+        for(Integer i=0; i<5; i++){
             products.add(new Product2(Name='Equipment '+i, Maintenance_Cycle__c=30*i, IsActive=true, Replacement_Part__c=true));
         }
+        products[0].maintenance_cycle__c=0; // shortest cycle
         //debug statement to see created products
         System.debug('In Test Class: Created Products: ' + products);
         insert products;

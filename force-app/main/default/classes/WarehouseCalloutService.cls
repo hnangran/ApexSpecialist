@@ -58,26 +58,36 @@ public with sharing class WarehouseCalloutService implements Queueable, Database
         System.debug('In WarehouseCalloutService Class: EquipmentPayload Map: ' + equipmentPayloadMap);
         
         //4. Get existing equipments to prepare for upsert
-        Map<String, Product2> existingProductsMap = new Map<String, Product2>(
-                                                            [SELECT Id, Replacement_Part__c, Cost__c, Current_Inventory__c, 
-                                                                   Lifespan_Months__c, Maintenance_Cycle__c, Warehouse_SKU__c 
-                                                            FROM Product2 
-                                                            WHERE Warehouse_SKU__c IN : equipmentPayloadMap.keySet()]
-                                                        );
+        Map<String, Product2> existingProductsMap = new Map<String, Product2>();
+        List<Product2> existingProducts = [SELECT Id, Replacement_Part__c, Cost__c, Current_Inventory__c, 
+                                                 Lifespan_Months__c, Maintenance_Cycle__c, Warehouse_SKU__c
+                                          FROM Product2 
+                                          WHERE Warehouse_SKU__c IN : equipmentPayloadMap.keySet()];
+        //debug statement to see existing products
+        if(!existingProducts.isEmpty()){
+            System.debug('In WarehouseCalloutService Class: Existing Products List: ' + existingProducts);
 
-        //debug statement to see existing products map
-        System.debug('In WarehouseCalloutService Class: Existing Products Map: ' + existingProductsMap);
+            for(Product2 p : existingProducts){
+                existingProductsMap.put(p.Warehouse_SKU__c, p);
+            }
+            //debug statement to see existing products map
+            System.debug('In WarehouseCalloutService Class: Existing Products Map: ' + existingProductsMap);
+        }
 
         //5. Prepare equipment records for upsert
         List<Product2> productsToUpsert = new List<Product2>();
         for(EquipmentPayload ep : equipmentPayloadMap.values()){
             Product2 prod;
             if(existingProductsMap.containsKey(ep.sku)){
+                //debug statement to see product being updated
+                System.debug('In WarehouseCalloutService Class: Updating Product with SKU: ' + ep.sku);
                 prod = existingProductsMap.get(ep.sku);
             } else {
+                //debug statement to see product being created
+                System.debug('In WarehouseCalloutService Class: Creating Product with SKU: ' + ep.sku);
                 prod = new Product2();
-                prod.Warehouse_SKU__c = ep.sku; // set external ID for new records
             }
+            prod.Warehouse_SKU__c = ep.sku; // set external ID for new records
             prod.name = ep.name;
             prod.Replacement_Part__c = true; // set to true for all records from warehouse
             prod.Cost__c = ep.cost;

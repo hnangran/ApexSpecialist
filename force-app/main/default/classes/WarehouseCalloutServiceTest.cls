@@ -38,6 +38,18 @@ private class WarehouseCalloutServiceTest {
 
     @IsTest
     static void testWarehouseCallout(){
+
+        //insert a product to test update scenario
+        Product2 newP = new Product2(Name='Test Equipment', Maintenance_Cycle__c=30, IsActive=true, Replacement_Part__c=false, Warehouse_SKU__c='SKU123');
+        insert newP;
+        //debug statement to confirm insertion
+        System.debug('In Test Class: Inserted Product: ' + newP);
+
+        //SOQL to confirm insertion
+        Product2 insertedP = [SELECT Id, Name, Maintenance_Cycle__c, IsActive, Replacement_Part__c, Warehouse_SKU__c FROM Product2 WHERE Id=:newP.Id];
+        System.debug('In Test Class: Queried Inserted Product: ' + insertedP);
+        System.assertEquals('SKU123', insertedP.Warehouse_SKU__c);
+
         Test.startTest();   // Start test
         Test.setMock(HttpCalloutMock.class, new WarehouseCalloutServiceMock()); // Set mock callout class
         // Enqueue the Queueable class
@@ -46,6 +58,9 @@ private class WarehouseCalloutServiceTest {
 
         // Verify that the job was enqueued
         System.assertNotEquals(null, jobID, 'The job ID should not be null');
+
+        Product2 ex = [SELECT Name, Maintenance_Cycle__c, Warehouse_SKU__c FROM Product2 WHERE Warehouse_SKU__c='SKU123' LIMIT 1];
+        System.assertEquals('SKU123', ex.Warehouse_SKU__c);
 
         // Verify that the Product2 records were upserted
         List<Product2> products = [SELECT Id, Replacement_Part__c, Cost__c, Current_Inventory__c, Lifespan_Months__c, Maintenance_Cycle__c, Warehouse_SKU__c FROM Product2 WHERE Warehouse_SKU__c IN ('SKU123', 'SKU456', 'SKU789')];
@@ -57,6 +72,33 @@ private class WarehouseCalloutServiceTest {
             System.assertNotEquals(null, p.Lifespan_Months__c, 'Lifespan_Months__c should not be null');
             System.assertNotEquals(null, p.Maintenance_Cycle__c, 'Maintenance_Cycle__c should not be null');
         }   
+    }
+
+    @IsTest
+    static void non200_throwsCalloutException() {
+        // Arrange
+        Test.setMock(HttpCalloutMock.class, new BadMock());
+        Test.startTest();
+        try {
+            System.enqueueJob(new WarehouseCalloutService()); // your Queueable
+            Test.stopTest(); // executes the job and surfaces the throw in tests
+            System.assert(false, 'Expected CalloutException to be thrown');
+        } catch (Exception ex) {
+            System.assert(
+                ex.getMessage().contains('Warehouse callout failed: 500'),
+                'Unexpected message: ' + ex.getMessage()
+            );
+        }
+    }    
+
+    private class BadMock implements HttpCalloutMock {
+        public HttpResponse respond(HttpRequest req) {
+            HttpResponse r = new HttpResponse();
+            r.setStatusCode(500);
+            r.setStatus('Internal Server Error');
+            r.setBody('Oops');
+            return r;
+        }
     }
 
     /* 
